@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "PukliWikiDumper"
+name = "PukiWikiDumper"
 version = "0.0.1"
 description = "A tool for archiving PukiWiki"
 authors = ["yzqzss <yzqzss@yandex.com>"]
