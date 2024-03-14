@@ -193,25 +193,6 @@ files = [
 ]
 
 [[package]]
-name = "dokuwikidumper"
-version = "0.1.44"
-description = "A tool for archiving DokuWiki"
-optional = false
-python-versions = ">=3.8,<4.0"
-files = [
-    {file = "dokuwikidumper-0.1.44-py3-none-any.whl", hash = "sha256:99e7287d0dbe4257453c4cab7e034869a0bc5ac9e0a69c912231308bb9b56684"},
-    {file = "dokuwikidumper-0.1.44.tar.gz", hash = "sha256:24b0d19b73c06a3074d69ada8ee0281d68c94b954be18147388bf153859dcdac"},
-]
-
-[package.dependencies]
-beautifulsoup4 = ">=4.11.2,<5.0.0"
-internetarchive = ">=3.5.0,<4.0.0"
-lxml = ">=4.9.2,<5.0.0"
-python-slugify = ">=8.0.1,<9.0.0"
-requests = ">=2.31.0,<3.0.0"
-rich = ">=13.4.2,<14.0.0"
-
-[[package]]
 name = "flake8"
 version = "4.0.1"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -706,4 +687,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "c4f1932e4a48a15aab401b1c533ab80d24ff4b19582bdb7b8d578196314b8a77"
+content-hash = "430280d6882ed6adbe3494cd9dbf486e6d066c7709ef24e4a4df851db0776a9f"

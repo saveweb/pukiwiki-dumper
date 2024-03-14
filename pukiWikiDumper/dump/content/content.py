@@ -57,8 +57,7 @@ def dump_content(puki_url: str = '', dumpDir: str = '', session: Session = None,
             time.sleep(0.05)
         if sub_thread_error:
             raise sub_thread_error
-        getSource = get_source_edit
-        getSource = get_source_diff
+        getSource = [get_source_diff, get_source_edit]
         t = threading.Thread(target=try_dump_page, args=(dumpDir,
                                                      getSource,
                                                      title,
@@ -89,9 +88,17 @@ def dump_page(dumpDir: str,
         print(msg_header, '    [[%s]] exists. skip' % (title))
         return
 
-
-    srouce = getSource(puki_url, title, session=session)
-
+    srouce = None
+    err = None
+    for action in getSource:
+        try:
+            srouce = action(puki_url, title, session=session)
+        except Exception as e:
+            print(msg_header, '    Error in sub thread: (', e, ') ignored')
+            err = e
+            continue
+    if srouce is None:
+        raise err
 
     if use_hex: # title to UTF-8 HEX
         child_path = ''

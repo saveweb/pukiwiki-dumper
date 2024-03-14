@@ -23,7 +23,7 @@ def search_ia(ori_url: str, addeddate_intervals: Optional[List[str]] = None):
 
     ia_session = ArchiveSession()
 
-    subject = 'pukiWikiDumper'
+    subject = 'PukiWikiDumper'
     ori_url1 = ori_url.replace('/index.php', '/')
     ori_url2 = ori_url.replace('/index.php', '')
 
