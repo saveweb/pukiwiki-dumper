@@ -27,11 +27,11 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
             return attaches
     attaches: List[Dict[str, str]] = []
 
-    attach_list_soup = BeautifulSoup(
-        session.get(url, params={
-            'plugin': 'attach',
-            'pcmd': 'list'
-        }).content, running_config.html_parser)
+    r = session.get(url, params={'plugin': 'attach', 'pcmd': 'list'})
+    from_encoding = None
+    if r.encoding.lower() == 'euc-jp' or r.apparent_encoding.lower() == 'euc-jp':
+        from_encoding = 'euc_jisx0213'
+    attach_list_soup = BeautifulSoup(r.content, running_config.html_parser,from_encoding=from_encoding, exclude_encodings=['iso-8859-1', 'windows-1252'])
     body = attach_list_soup.find('div', {'id': 'body'})
     body = attach_list_soup.find('div', {'class': 'body'}) if body is None else body
     hrefs = body.find_all('a', href=True)
