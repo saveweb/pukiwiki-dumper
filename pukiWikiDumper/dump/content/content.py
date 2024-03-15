@@ -1,21 +1,17 @@
-import builtins
 import json
 import os
 import time
 import threading
 from typing import Dict
 
-from bs4 import BeautifulSoup
 from requests import Session
 
 from pukiWikiDumper.exceptions import ActionEditDisabled, ActionEditTextareaNotFound
 
-from .revisions import get_revisions, get_source_diff, get_source_edit, save_page_changes
+from .revisions import get_source_diff, get_source_edit, get_source_source
 from .titles import get_pages
 from pukiWikiDumper.utils.util import load_pages, smkdirs, uopen
 from pukiWikiDumper.utils.util import print_with_lock as print
-from pukiWikiDumper.utils.config import running_config
-
 
 
 sub_thread_error = None
@@ -59,7 +55,7 @@ def dump_content(puki_url: str = '', dumpDir: str = '', session: Session = None,
             time.sleep(0.05)
         if sub_thread_error:
             raise sub_thread_error
-        getSource = [get_source_edit, get_source_diff]
+        getSource = [get_source_source, get_source_edit, get_source_diff]
         t = threading.Thread(target=try_dump_page, args=(dumpDir,
                                                      getSource,
                                                      page,
