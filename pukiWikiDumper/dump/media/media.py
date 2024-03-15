@@ -98,7 +98,13 @@ def dump_attachs(base_url: str = '', dumpDir: str = '', session=None, threads: i
         def download(attach: Dict[str, str], session: requests.Session):
             filename = attach['refer'].encode('utf-8').hex() + '_' + attach['file'].encode('utf-8').hex()
             filename = filename.upper()
-            file = dumpDir + '/attach/' + filename
+            if len(filename) > 255: # filename too long
+                subdir_A = filename[:255]
+                subfilename_B = filename[255:]
+                smkdirs(dumpDir, '/attach/' + subdir_A)
+                file = dumpDir + '/attach/' + subdir_A + '/' + subfilename_B
+            else:
+                file = dumpDir + '/attach/' + filename
             local_size = -1
             if os.path.exists(file):
                 local_size = os.path.getsize(file)

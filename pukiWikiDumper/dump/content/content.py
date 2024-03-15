@@ -80,8 +80,14 @@ def dump_page(dumpDir: str,
               session: Session,
               current_only: bool,):
     msg_header = page["title"] + ': '
-    use_hex = True
-    filepath = dumpDir + '/wiki/' + (page['title'].encode('utf-8').hex().upper() if use_hex else page['title']) + '.txt'
+    filename = (page['title'].encode('utf-8').hex().upper()) + '.txt'
+    if len(filename) > 255: # filename too long
+        subdir_A = filename[:255]
+        subfilename_B = filename[255:]
+        smkdirs(dumpDir, '/wiki/' + subdir_A)
+        filepath = dumpDir + '/wiki/' + subdir_A + '/' + subfilename_B
+    else:
+        filepath = dumpDir + '/wiki/' + filename
     if os.path.exists(filepath):
         print(msg_header, '    [[%s]] exists. skip' % (page['title']))
         return
