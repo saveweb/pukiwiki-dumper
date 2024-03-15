@@ -59,7 +59,7 @@ def dump_content(puki_url: str = '', dumpDir: str = '', session: Session = None,
             time.sleep(0.05)
         if sub_thread_error:
             raise sub_thread_error
-        getSource = [get_source_diff, get_source_edit]
+        getSource = [get_source_edit, get_source_diff]
         t = threading.Thread(target=try_dump_page, args=(dumpDir,
                                                      getSource,
                                                      page,
