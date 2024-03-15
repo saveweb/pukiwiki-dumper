@@ -33,12 +33,13 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
             'pcmd': 'list'
         }).content, running_config.html_parser)
     body = attach_list_soup.find('div', {'id': 'body'})
+    body = attach_list_soup.find('div', {'class': 'body'}) if body is None else body
     hrefs = body.find_all('a', href=True)
     for a in hrefs:
         if "pcmd=open" in a['href']:
             full_url: str = urlparse.urljoin(url, a['href'])
             parsed = urlparse.urlparse(full_url)
-            encodings = [attach_list_soup.original_encoding] + ['euc-jp', 'utf-8', 'shift_jis']
+            encodings = [attach_list_soup.original_encoding] + ['euc-jp', 'euc_jisx0213', 'utf-8', 'shift_jis']
             query = None
             url_encoding: str = None
             for encoding in encodings:
