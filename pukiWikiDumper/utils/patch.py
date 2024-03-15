@@ -53,6 +53,9 @@ class SessionMonkeyPatch:
                 _self.encoding = _self.apparent_encoding
                 if _self.encoding is None:
                     _self.encoding = 'utf-8'
+            if _self.encoding.lower() == 'euc-jp':
+                print('Info: encoding is euc-jp, changing to euc_jisx0213')
+                _self.encoding = 'euc_jisx0213'
 
             text = self.old_text_method.fget(_self)
             if self.trim_PHP_warnings:

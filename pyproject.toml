@@ -23,7 +23,6 @@ internetarchive = "^3.5.0"
 rich = "^13.4.2"
 python-slugify = "^8.0.1"
 chardet = "^5.2.0"
-html5lib = "^1.1"
 
 
 [tool.poetry.dev-dependencies]

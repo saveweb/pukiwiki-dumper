@@ -21,7 +21,10 @@ def get_source_diff(url, page, rev='', session: requests.Session = None,):
     params={'cmd': 'diff', 'page': page['title']}
     query = urlparse.urlencode(params, encoding=page['url_encoding'], errors='strict')
     r = session.get(url + '?' + query)
-    soup = BeautifulSoup(r.content, running_config.html_parser)
+    from_encoding = None
+    if r.encoding.lower() == 'euc-jp' or r.apparent_encoding.lower() == 'euc-jp':
+        from_encoding = 'euc_jisx0213'
+    soup = BeautifulSoup(r.content, running_config.html_parser, from_encoding=from_encoding, exclude_encodings=['ISO-8859-1'])
     source = None
 
     pre = soup.find('pre')
@@ -42,7 +45,10 @@ def get_source_edit(url, page, rev='', session: requests.Session = None,):
     params={'cmd': 'edit', 'page': page['title']}
     query = urlparse.urlencode(params, encoding=page['url_encoding'], errors='strict')
     r = session.get(url + '?' + query)
-    soup = BeautifulSoup(r.content, running_config.html_parser)
+    from_encoding = None
+    if r.encoding.lower() == 'euc-jp' or r.apparent_encoding.lower() == 'euc-jp':
+        from_encoding = 'euc_jisx0213'
+    soup = BeautifulSoup(r.content, running_config.html_parser, from_encoding=from_encoding, exclude_encodings=['ISO-8859-1'])
     source = None
     try:
         source = ''.join(soup.find('textarea', {'name': 'msg'}).text).strip()

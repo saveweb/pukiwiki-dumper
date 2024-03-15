@@ -60,7 +60,7 @@ def getArgumentParser():
     parser.add_argument('--hard-retry', type=int, default=3, dest='hard_retry',
                         help='Maximum number of retries for hard errors [default: 3]')
 
-    parser.add_argument('--parser', help='HTML parser [default: html5lib]', type=str, default='html5lib')
+    parser.add_argument('--parser', help='HTML parser [default: html.parser]', type=str, default='html.parser')
 
     parser.add_argument('--verbose', action='store_true', help='Verbose output')
     parser.add_argument('--cookies', help='cookies file')

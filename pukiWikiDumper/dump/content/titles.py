@@ -20,7 +20,10 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
         soup = BeautifulSoup(debug_content, running_config.html_parser)
     else:
         r = session.get(url, params=params)
-        soup = BeautifulSoup(r.content, running_config.html_parser)
+        from_encoding = None
+        if r.encoding.lower() == 'euc-jp' or r.apparent_encoding.lower() == 'euc-jp':
+            from_encoding = 'euc_jisx0213'
+        soup = BeautifulSoup(r.content, running_config.html_parser, from_encoding=from_encoding, exclude_encodings=['iso-8859-1'])
     body = soup.find('div', {'id': 'body'})
     body = soup.find('div', {'class': 'body'}) if body is None else body # https://www.wikihouse.com/pukiwiki/index.php?cmd=list
     if body is None:
