@@ -26,8 +26,9 @@ def search_ia(ori_url: str, addeddate_intervals: Optional[List[str]] = None):
     subject = 'PukiWikiDumper'
     ori_url1 = ori_url.replace('/index.php', '/')
     ori_url2 = ori_url.replace('/index.php', '')
+    ori_url3 = ori_url + ('/' if not ori_url.endswith('/') else '') + 'index.php'
 
-    query = f'(subject:"{subject}" AND (originalurl:"{ori_url}" OR originalurl:"{ori_url1}" OR originalurl:"{ori_url2}"))'
+    query = f'(subject:"{subject}" AND (originalurl:"{ori_url}" OR originalurl:"{ori_url1}" OR originalurl:"{ori_url2}" OR originalurl:"{ori_url3}"))'
     if addeddate_intervals:
         query += f' AND addeddate:[{addeddate_intervals[0]} TO {addeddate_intervals[1]}]'
     search = Search(ia_session, query=query,
