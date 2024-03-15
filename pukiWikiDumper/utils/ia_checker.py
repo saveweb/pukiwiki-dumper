@@ -24,6 +24,7 @@ def search_ia(ori_url: str, addeddate_intervals: Optional[List[str]] = None):
     ia_session = ArchiveSession()
 
     subject = 'PukiWikiDumper'
+    ori_url = ori_url.lower()
     ori_url1 = ori_url.replace('/index.php', '/')
     ori_url2 = ori_url.replace('/index.php', '')
     ori_url3 = ori_url + ('/' if not ori_url.endswith('/') else '') + 'index.php'
@@ -31,6 +32,7 @@ def search_ia(ori_url: str, addeddate_intervals: Optional[List[str]] = None):
     query = f'(subject:"{subject}" AND (originalurl:"{ori_url}" OR originalurl:"{ori_url1}" OR originalurl:"{ori_url2}" OR originalurl:"{ori_url3}"))'
     if addeddate_intervals:
         query += f' AND addeddate:[{addeddate_intervals[0]} TO {addeddate_intervals[1]}]'
+    print(query)
     search = Search(ia_session, query=query,
                     fields=['identifier', 'addeddate', 'title', 'subject', 'originalurl', 'uploader', 'item_size'],
                     sorts=['addeddate desc'], # newest first
@@ -42,7 +44,7 @@ def search_ia(ori_url: str, addeddate_intervals: Optional[List[str]] = None):
         # 'addeddate': '2023-03-15T01:42:12Z',
         # 'subject': ['wiki', 'wikiteam', 'MediaWiki', .....]}
         if result['originalurl'].lower() in [
-            ori_url.lower(),
+            ori_url, ori_url1, ori_url2, ori_url3
             ]:
             logger.info(f'Original URL match: {result}')
             yield result
