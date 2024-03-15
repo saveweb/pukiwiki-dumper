@@ -29,6 +29,6 @@ def get_config(dumpDir: str) -> dict:
 
 @dataclass
 class _Dumper_running_config(metaclass = Singleton):
-    html_parser: str = 'lxml'
+    html_parser: str = 'html.parser'
     dump_media: bool = False
 running_config = _Dumper_running_config()
