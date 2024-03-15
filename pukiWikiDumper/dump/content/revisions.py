@@ -15,16 +15,18 @@ from pukiWikiDumper.utils.config import running_config
 
 
 # args must be same as getSourceEdit(), even if not used
-def get_source_diff(url, title, rev='', session: requests.Session = None,):
+def get_source_diff(url, page, rev='', session: requests.Session = None,):
     """Export the raw source of a page (at a given revision)"""
 
-    r = session.get(url, params={'cmd': 'diff', 'page': title})
-    soup = BeautifulSoup(r.text, running_config.html_parser)
+    params={'cmd': 'diff', 'page': page['title']}
+    query = urlparse.urlencode(params, encoding=page['url_encoding'], errors='strict')
+    r = session.get(url + '?' + query)
+    soup = BeautifulSoup(r.content, running_config.html_parser)
     source = None
 
     pre = soup.find('pre')
     if pre is None:
-        raise ActionEditTextareaNotFound(title)
+        raise ActionEditTextareaNotFound(page['title'])
     for span in pre.find_all('span'):
         # remove diff-remove and keep diff-add spans
         if 'diff_removed' in span.get('class', []):
@@ -34,20 +36,22 @@ def get_source_diff(url, title, rev='', session: requests.Session = None,):
     return source
 
 # args must be same as getSourceExport(), even if not used
-def get_source_edit(url, title, rev='', session: requests.Session = None,):
+def get_source_edit(url, page, rev='', session: requests.Session = None,):
     """Export the raw source of a page by scraping the edit box content. Yuck."""
 
-    r = session.get(url, params={'cmd': 'edit', 'page': title})
-    soup = BeautifulSoup(r.text, running_config.html_parser)
+    params={'cmd': 'edit', 'page': page['title']}
+    query = urlparse.urlencode(params, encoding=page['url_encoding'], errors='strict')
+    r = session.get(url + '?' + query)
+    soup = BeautifulSoup(r.content, running_config.html_parser)
     source = None
     try:
         source = ''.join(soup.find('textarea', {'name': 'msg'}).text).strip()
     except AttributeError as e:
         if 'Action disabled: source' in r.text:
-            raise ActionEditDisabled(title)
+            raise ActionEditDisabled(page['title'])
     
     if not source:
-        raise ActionEditTextareaNotFound(title)
+        raise ActionEditTextareaNotFound(page['title'])
 
     return source
 
@@ -84,7 +88,7 @@ def get_revisions(puki_url, title, session: requests.Session = None, msg_header:
                 'do': 'revisions',
                 'first': continue_index})
 
-        soup = BeautifulSoup(r.text, running_config.html_parser)
+        soup = BeautifulSoup(r.content, running_config.html_parser)
 
         try:
             lis = soup.find('form', {'id': 'page__revisions'}).find(

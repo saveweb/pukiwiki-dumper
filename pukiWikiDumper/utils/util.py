@@ -1,4 +1,5 @@
 import builtins
+import json
 import os
 import re
 import sys
@@ -194,20 +195,17 @@ def url2prefix(url: str, ascii_slugify: bool = True):
     return prefix
 
 
-def load_titles(titlesFilePath) -> Optional[List[str]]:
+def load_pages(pagesFilePath) -> Optional[List[str]]:
     """ Load titles from dump directory
 
     Return:
         `list[str]`: titles
         `None`: titles file does not exist or incomplete
      """
-    if os.path.exists(titlesFilePath):
-        with uopen(titlesFilePath, 'r') as f:
-            titles = f.read().splitlines()
-        if len(titles) and titles[-1] == '--END--':
-            print('Loaded %d titles from %s' %
-                  (len(titles) - 1, titlesFilePath))
-            return titles[:-1]  # remove '--END--'
+    if os.path.exists(pagesFilePath):
+        with uopen(pagesFilePath, 'r') as f:
+            pages = [json.loads(line) for line in f]
+            return pages
 
     return None
 

@@ -1,7 +1,9 @@
 import builtins
+import json
 import os
 import time
 import threading
+from typing import Dict
 
 from bs4 import BeautifulSoup
 from requests import Session
@@ -9,8 +11,8 @@ from requests import Session
 from pukiWikiDumper.exceptions import ActionEditDisabled, ActionEditTextareaNotFound
 
 from .revisions import get_revisions, get_source_diff, get_source_edit, save_page_changes
-from .titles import get_titles
-from pukiWikiDumper.utils.util import load_titles, smkdirs, uopen
+from .titles import get_pages
+from pukiWikiDumper.utils.util import load_pages, smkdirs, uopen
 from pukiWikiDumper.utils.util import print_with_lock as print
 from pukiWikiDumper.utils.config import running_config
 
@@ -25,14 +27,14 @@ def dump_content(puki_url: str = '', dumpDir: str = '', session: Session = None,
     if not dumpDir:
         raise ValueError('dumpDir must be set')
 
-    titles = load_titles(titlesFilePath=dumpDir + '/dumpMeta/titles.txt')
-    if titles is None:
-        titles = get_titles(url=puki_url, session=session)
-        with uopen(dumpDir + '/dumpMeta/titles.txt', 'w') as f:
-            f.write('\n'.join(titles))
-            f.write('\n--END--\n')
+    pages = load_pages(pagesFilePath=dumpDir + '/dumpMeta/pages.jsonl')
+    if pages is None:
+        pages = get_pages(url=puki_url, session=session)
+        with uopen(dumpDir + '/dumpMeta/pages.jsonl', 'w') as f:
+            for page in pages:
+                f.write(json.dumps(page, ensure_ascii=False) + '\n')
 
-    if not len(titles):
+    if not len(pages):
         print('Empty wiki')
         return False
 
@@ -49,10 +51,10 @@ def dump_content(puki_url: str = '', dumpDir: str = '', session: Session = None,
                 sub_thread_error = e
                 raise e
             else:
-                print('[',args[2]+1,']Error in sub thread: (', e, ') ignored')
-    ts = titles.copy()
+                print('[',args[2],']Error in sub thread: (', e, ') ignored')
+    ts = pages.copy()
     while ts:
-        title = ts.pop(0)
+        page = ts.pop(0)
         while threading.active_count() > threads:
             time.sleep(0.05)
         if sub_thread_error:
@@ -60,12 +62,12 @@ def dump_content(puki_url: str = '', dumpDir: str = '', session: Session = None,
         getSource = [get_source_diff, get_source_edit]
         t = threading.Thread(target=try_dump_page, args=(dumpDir,
                                                      getSource,
-                                                     title,
+                                                     page,
                                                      puki_url,
                                                      session,
                                                      current_only,
                                                      ))
-        print('Content: (%d/%d): [[%s]] ...' % (len(titles) - len(ts), len(titles), title))
+        print('Content: (%d/%d): [[%s]] ...' % (len(pages) - len(ts), len(pages), page))
         t.daemon = True
         t.start()
 
@@ -77,65 +79,61 @@ def dump_content(puki_url: str = '', dumpDir: str = '', session: Session = None,
 
 def dump_page(dumpDir: str,
               getSource,
-              title: str,
+              page: Dict[str, str],
               puki_url: str,
               session: Session,
               current_only: bool,):
-    msg_header = f'[{title}]: '
+    msg_header = page["title"] + ': '
     use_hex = True
-    filepath = dumpDir + '/wiki/' + (title.encode('utf-8').hex().upper() if use_hex else title) + '.txt'
+    filepath = dumpDir + '/wiki/' + (page['title'].encode('utf-8').hex().upper() if use_hex else page['title']) + '.txt'
     if os.path.exists(filepath):
-        print(msg_header, '    [[%s]] exists. skip' % (title))
+        print(msg_header, '    [[%s]] exists. skip' % (page['title']))
         return
 
     srouce = None
     err = None
     for action in getSource:
         try:
-            srouce = action(puki_url, title, session=session)
+            srouce = action(puki_url, page, session=session)
+            break
         except Exception as e:
-            print(msg_header, '    Error in sub thread: (', e, ') ignored')
+            print(msg_header, str(action), '    Error in sub thread: (', e, ') ignored')
             err = e
             continue
     if srouce is None:
         raise err
 
-    if use_hex: # title to UTF-8 HEX
-        child_path = ''
-    else:
-        child_path = title.lstrip('/')
-        child_path = '/'.join(child_path.split('/')[:-1])
 
-    smkdirs(dumpDir, '/wiki/' + child_path)
+    smkdirs(dumpDir, '/wiki/')
 
     with uopen(filepath, 'w') as f:
         f.write(srouce)
 
     if current_only:
-        print(msg_header, '    [[%s]] saved.' % (title))
+        print(msg_header, '    [[%s]] saved.' % (page['title']))
         return
 
-    revs = get_revisions(puki_url, title, session=session, msg_header=msg_header)
+    # revs = get_revisions(puki_url, page, session=session, msg_header=msg_header)
 
 
-    save_page_changes(dumpDir=dumpDir, child_path=child_path, title=title, 
-                       revs=revs, msg_header=msg_header)
+    # save_page_changes(dumpDir=dumpDir, child_path=child_path, title=page, 
+    #                    revs=revs, msg_header=msg_header)
 
 
     for rev in revs[1:]:
         if 'id' in rev and rev['id']:
             try:
-                txt = getSource(puki_url, title, rev['id'], session=session)
+                txt = getSource(puki_url, page, rev['id'], session=session)
                 smkdirs(dumpDir, '/attic/' + child_path)
-                with uopen(dumpDir + '/attic/' + title.replace(':', '/') + '.' + rev['id'] + '.txt', 'w') as f:
+                with uopen(dumpDir + '/attic/' + page.replace(':', '/') + '.' + rev['id'] + '.txt', 'w') as f:
                     f.write(txt)
                 print(msg_header, '    Revision %s of [[%s]] saved.' % (
-                    rev['id'], title))
+                    rev['id'], page))
             except DispositionHeaderMissingError:
                 print(msg_header, '    Revision %s of [[%s]] is empty. (probably deleted)' % (
-                    rev['id'], title))
+                    rev['id'], page))
         else:
-            print(msg_header, '    Revision %s of [[%s]] failed: %s' % (rev['id'], title, 'Rev id not found (please check ?do=revisions of this page)'))
+            print(msg_header, '    Revision %s of [[%s]] failed: %s' % (rev['id'], page, 'Rev id not found (please check ?do=revisions of this page)'))
 
 
             # time.sleep(1.5)

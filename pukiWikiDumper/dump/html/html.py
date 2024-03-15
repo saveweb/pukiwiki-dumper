@@ -3,9 +3,9 @@ import threading
 import time
 import requests
 from pukiWikiDumper.dump.content.revisions import get_revisions, save_page_changes
-from pukiWikiDumper.dump.content.titles import get_titles
+from pukiWikiDumper.dump.content.titles import get_pages
 
-from pukiWikiDumper.utils.util import load_titles, smkdirs, uopen
+from pukiWikiDumper.utils.util import load_pages, smkdirs, uopen
 from pukiWikiDumper.utils.util import print_with_lock as print
 from pukiWikiDumper.utils.config import running_config
 
@@ -20,9 +20,9 @@ def dump_HTML(puki_url, dumpDir,
                   ignore_errors: bool = False, current_only: bool = False):
     smkdirs(dumpDir, HTML_PAGR_DIR)
 
-    titles = load_titles(titlesFilePath=dumpDir + '/dumpMeta/titles.txt')
+    titles = load_pages(pagesFilePath=dumpDir + '/dumpMeta/titles.txt')
     if titles is None:
-        titles = get_titles(url=puki_url, session=session)
+        titles = get_pages(url=puki_url, session=session)
         with uopen(dumpDir + '/dumpMeta/titles.txt', 'w') as f:
             f.write('\n'.join(titles))
             f.write('\n--END--\n')

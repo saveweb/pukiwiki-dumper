@@ -1,23 +1,26 @@
 from typing import Optional
+import urllib.parse as urlparse
+
 from bs4 import BeautifulSoup
 import requests
+
 from pukiWikiDumper.exceptions import CmdListDisabled
 from pukiWikiDumper.utils.util import print_with_lock as print
 from pukiWikiDumper.utils.config import running_config
 
-def get_titles(url: str, debug_content: Optional[bytes] = None, session: requests.Session=None, useOldMethod=None):
+def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests.Session=None, useOldMethod=None):
     """Get titles given a doku.php URL and an (optional) namespace
 
     :param `useOldMethod`: `bool|None`. `None` will auto-detect if ajax api is enabled"""
 
 
-    titles = []
+    pages = []
     params = {'cmd': 'list'}
     if debug_content:
         soup = BeautifulSoup(debug_content, running_config.html_parser)
     else:
         r = session.get(url, params=params)
-        soup = BeautifulSoup(r.text, running_config.html_parser)
+        soup = BeautifulSoup(r.content, running_config.html_parser)
     body = soup.find('div', {'id': 'body'})
     if body is None:
         raise CmdListDisabled('Action index is disabled')
@@ -33,6 +36,25 @@ def get_titles(url: str, debug_content: Optional[bytes] = None, session: request
         if href and href.startswith('#'):
             continue
         title = a.text
-        titles.append(title)
 
-    return titles
+        full_url = urlparse.urljoin(r.url, a['href'])
+        parsed = urlparse.urlparse(full_url)
+
+
+        encodings = [soup.original_encoding] + ['euc-jp', 'utf-8', 'shift_jis']
+        url_encoding = None
+        for encoding in encodings:
+            try:
+                urlparse.parse_qs(parsed.query, errors='strict', encoding=encoding)
+                url_encoding = encoding
+                break
+            except UnicodeEncodeError:
+                pass
+        assert url_encoding, f'Failed to parse query string: {parsed.query}'
+        page = {
+            'title': title,
+            'url_encoding': url_encoding,
+        }
+        pages.append(page)
+
+    return pages

@@ -29,7 +29,7 @@ def getArgumentParser():
 
     group_download.add_argument('--content', action='store_true', help='Dump content')
     group_download.add_argument('--media', action='store_true', help='Dump media')
-    group_download.add_argument('--html', action='store_true', help='Dump HTML')
+    # group_download.add_argument('--html', action='store_true', help='Dump HTML')
 
     parser.add_argument('--current-only', dest='current_only', action='store_true',
                         help='Dump latest revision, no history [default: false]')
@@ -60,12 +60,12 @@ def getArgumentParser():
     parser.add_argument('--hard-retry', type=int, default=3, dest='hard_retry',
                         help='Maximum number of retries for hard errors [default: 3]')
 
-    parser.add_argument('--parser', help='HTML parser [default: lxml]', type=str, default='lxml')
+    parser.add_argument('--parser', help='HTML parser [default: html5lib]', type=str, default='html5lib')
 
     parser.add_argument('--verbose', action='store_true', help='Verbose output')
     parser.add_argument('--cookies', help='cookies file')
     parser.add_argument('--auto', action='store_true', 
-                        help='dump: content+media+html, threads=2, ignore-action-disable-edit. (threads is overridable)')
+                        help='dump: content+media, threads=2, current-only. (threads is overridable)')
     parser.add_argument('-u', '--upload', action='store_true', 
                         help='Upload wikidump to Internet Archive after successfully dumped'
                         ' (only works with --auto)')
@@ -77,8 +77,11 @@ def getArgumentParser():
 
 
 def checkArgs(args):
-    if not args.content and not args.media and not args.html:
-        print('Nothing to do. Use --content and/or --media and/or --html to specify what to dump.')
+    if args.content and not args.current_only:
+        print("PukiWikiDumper does not support history dump yet (WIP). For now, you have to pass --current-only with --content :(")
+        return False
+    if not args.content and not args.media:
+        print('Nothing to do. Use --content and/or --media to specify what to dump.')
         return False
     if not args.url:
         print('No URL specified.')
@@ -89,12 +92,12 @@ def checkArgs(args):
     if args.threads > 5:
         print('Warning: threads > 5 , will bring a lot of pressure to the server.')
         print('Original site may deny your request, even ban our UA.')
-        time.sleep(3)
-        input('Press Enter to continue...')
+        # time.sleep(3)
+        # input('Press Enter to continue...')
     if args.ignore_errors:
         print('Warning: You have chosen to ignore errors in the sub threads. This may cause incomplete dumps.')
-        time.sleep(3)
-        input('Press Enter to continue...')
+        # time.sleep(3)
+        # input('Press Enter to continue...')
     if args.ignore_action_disabled_edit and not args.content:
         print('Warning: You have specified --ignore-action-disabled-edit, but you have not specified --content.')
         return False
@@ -104,8 +107,8 @@ def checkArgs(args):
     if args.delay > 0.0 and args.threads > 1:
         print(f"Warning: You have specified a delay and more than one thread ({args.threads}).")
         print("!!! Delay will be applied to each thread separately !!!")
-        time.sleep(3)
-        input('Press Enter to continue...')
+        # time.sleep(3)
+        # input('Press Enter to continue...')
     if args.retry < 0:
         print('Retry must be >= 0.')
         return False
@@ -131,9 +134,9 @@ def getParameters():
     if args.auto:
         args.content = True
         args.media = True
-        args.html = True
+        args.current_only = True
         args.threads = args.threads if args.threads >= 1 else 2
-        args.ignore_action_disabled_edit = True
+        # args.ignore_action_disabled_edit = True
     else:
         # reset magic number
         args.threads = args.threads if args.threads >= 1 else 1
@@ -224,16 +227,16 @@ def dump():
                             current_only=args.current_only)
                 with open(os.path.join(dumpDir, 'content_dumped.mark'), 'w') as f:
                     f.write('done')
-        if args.html:
-            if os.path.exists(os.path.join(dumpDir, 'html_dumped.mark')):
-                print('HTML already dumped.')
-            else:
-                print('\nDumping HTML...\n')
-                dump_HTML(puki_url=puki_url, dumpDir=dumpDir,
-                        session=session, threads=args.threads,
-                        ignore_errors=args.ignore_errors, current_only=args.current_only)
-                with open(os.path.join(dumpDir, 'html_dumped.mark'), 'w') as f:
-                    f.write('done')
+        # if args.html:
+        #     if os.path.exists(os.path.join(dumpDir, 'html_dumped.mark')):
+        #         print('HTML already dumped.')
+        #     else:
+        #         print('\nDumping HTML...\n')
+        #         dump_HTML(puki_url=puki_url, dumpDir=dumpDir,
+        #                 session=session, threads=args.threads,
+        #                 ignore_errors=args.ignore_errors, current_only=args.current_only)
+        #         with open(os.path.join(dumpDir, 'html_dumped.mark'), 'w') as f:
+        #             f.write('done')
         if args.media: # last, so that we can know the dump is complete.
             if os.path.exists(os.path.join(dumpDir, 'attach_dumped.mark')):
                 print('Media already dumped.')

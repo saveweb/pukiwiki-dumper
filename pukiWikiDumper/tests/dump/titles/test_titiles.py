@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pukiWikiDumper.dump.content.content import get_titles
+from pukiWikiDumper.dump.content.content import get_pages
 
 PY_FILE_DIR = Path(__file__).parent
 
@@ -14,6 +14,6 @@ def test_get_titles():
     for i in cmd_list_result.keys():
         with open(PY_FILE_DIR / f"cmd_list.{i}.html", "rb") as f:
             content = f.read()
-        titles = get_titles(url="debug", debug_content=content)
+        titles = get_pages(url="debug", debug_content=content)
         # print(titles)
         assert len(titles) == cmd_list_result[i]

@@ -28,25 +28,35 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
     attaches: List[Dict[str, str]] = []
 
     attach_list_soup = BeautifulSoup(
-        session.post(url, {
+        session.get(url, params={
             'plugin': 'attach',
             'pcmd': 'list'
-        }).text, running_config.html_parser)
+        }).content, running_config.html_parser)
     body = attach_list_soup.find('div', {'id': 'body'})
     hrefs = body.find_all('a', href=True)
     for a in hrefs:
         if "pcmd=open" in a['href']:
-            full_url = urlparse.urljoin(url, a['href'])
+            full_url: str = urlparse.urljoin(url, a['href'])
             parsed = urlparse.urlparse(full_url)
-            query = urlparse.parse_qs(parsed.query)
-
+            encodings = [attach_list_soup.original_encoding] + ['euc-jp', 'utf-8', 'shift_jis']
+            query = None
+            url_encoding: str = None
+            for encoding in encodings:
+                try:
+                    query = urlparse.parse_qs(parsed.query, errors='strict', encoding=encoding)
+                    url_encoding = encoding
+                    break
+                except UnicodeDecodeError:
+                    pass
+            assert query, f'Failed to parse query string: {parsed.query}'
             file = query['file'][0]
             refer = query['refer'][0]
             age = int(query['age'][0]) if 'age' in query else None
             attaches.append({
                 'refer': refer,
                 'file': file,
-                'age': age
+                'age': age,
+                'url_encoding': url_encoding,
             })
 # <li><a href="./?plugin=attach&amp;pcmd=open&amp;file=sample1.png&amp;refer=BugTrack%2F100" title="2002/07/23 17:39:29 13.0KB">sample1.png</a> <span class="small">[<a href="./?plugin=attach&amp;pcmd=info&amp;file=sample1.png&amp;refer=BugTrack%2F100" title="添付ファイルの情報">詳細</a>]</span></li>
     print('Found %d files in namespace %s' % (len(attaches), ns or '(all)'))
@@ -95,13 +105,15 @@ def dump_attachs(base_url: str = '', dumpDir: str = '', session=None, threads: i
                               'File [[%s]] Exists' % attach)
                 return
             # ?plugin=attach&pcmd=open&file=article.inc.php&refer=PukiWiki%2F1.4%2F%E8%87%AA%E4%BD%9C%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3
-            with session.get(base_url, params={
+            params={
                 'plugin': "attach",
                 'pcmd': "open",
                 'file': attach['file'],
                 'refer': attach['refer'],
-                'age': attach['age'] if 'age' in attach else 0
-                },
+                'age': attach['age'] if attach['age'] else 0
+            }
+            urlencoded = urlparse.urlencode(params, encoding=attach['url_encoding'], errors='strict')
+            with session.get(base_url + '?' + urlencoded,
             stream=True, headers={'Referer': base_url}
             ) as r:
                 r.raise_for_status()
