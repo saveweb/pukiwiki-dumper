@@ -49,7 +49,7 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
         url_encoding = None
         for encoding in encodings:
             try:
-                title = urlparse.unquote(parsed.query, errors='strict', encoding=encoding)
+                title = urlparse.unquote(parsed.query.replace("+", " "), errors='strict', encoding=encoding)
                 url_encoding = encoding
                 break
             except (UnicodeEncodeError, UnicodeDecodeError):
