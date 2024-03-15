@@ -253,14 +253,14 @@ def dump():
 
     if args.upload and args.auto:
         print('Uploading to Internet Archive...')
-        # from dokuWikiUploader.uploader import upload
+        # from pukiWikiUploader.uploader import upload
         from subprocess import call
         time.sleep(5)
-        retcode = call([sys.executable, '-m', 'dokuWikiUploader.uploader', dumpDir] + args.uploader_args,
+        retcode = call([sys.executable, '-m', 'pukiWikiUploader.uploader', dumpDir] + args.uploader_args,
              shell=False, env=os.environ.copy())
         if retcode == 0:
-            print('dokuWikiUploader: --upload: Done')
+            print('pukiWikiUploader: --upload: Done')
         else:
-            print('dokuWikiUploader: --upload: [red] Failed [/red]!!!')
-            raise RuntimeError('dokuWikiUploader: --upload: Failed!!!')
+            print('pukiWikiUploader: --upload: [red] Failed [/red]!!!')
+            raise RuntimeError('pukiWikiUploader: --upload: Failed!!!')
 
