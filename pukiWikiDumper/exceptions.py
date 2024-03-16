@@ -38,8 +38,6 @@ class ActionEditDisabled(Exception):
 
 
 class CmdListDisabled(Exception):
-    def __init__(self):
-        pass
 
     def __str__(self):
         return "Action: index is disabled"

@@ -25,20 +25,30 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
         with uopen(dumpDir + '/dumpMeta/attachs.jsonl', 'r') as f:
             attaches = [json.loads(line) for line in f]
             return attaches
+
     attaches: List[Dict[str, str]] = []
 
-    r = session.get(url, params={'plugin': 'attach', 'pcmd': 'list'})
+    params={'plugin': 'attach', 'pcmd': 'list'}
+    if ns:
+        params['refer'] = ns
+
+    r = session.get(url, params=params, headers={'Referer': url})
+
     from_encoding = None
     if r.encoding.lower() == 'euc-jp' or r.apparent_encoding.lower() == 'euc-jp':
         from_encoding = 'euc_jisx0213'
+
     attach_list_soup = BeautifulSoup(r.content, running_config.html_parser,from_encoding=from_encoding, exclude_encodings=['iso-8859-1', 'windows-1252'])
+
     body = attach_list_soup.find('div', {'id': 'body'})
     body = attach_list_soup.find('div', {'class': 'body'}) if body is None else body
+
     hrefs = body.find_all('a', href=True)
     for a in hrefs:
-        if "pcmd=open" in a['href']:
+        if "pcmd=info" in a['href']:
             full_url: str = urlparse.urljoin(url, a['href'])
             parsed = urlparse.urlparse(full_url)
+
             encodings = [attach_list_soup.original_encoding] + ['euc-jp', 'euc_jisx0213', 'utf-8', 'shift_jis']
             query = None
             url_encoding: str = None
@@ -50,6 +60,7 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
                 except UnicodeDecodeError:
                     pass
             assert query, f'Failed to parse query string: {parsed.query}'
+
             file = query['file'][0]
             refer = query['refer'][0]
             age = int(query['age'][0]) if 'age' in query else None
@@ -59,6 +70,37 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
                 'age': age,
                 'url_encoding': url_encoding,
             })
+        # https://wikiwiki.jp/genshinwiki/?cmd=attach&pcmd=list
+        elif "pcmd=list" in a['href']:
+            full_url: str = urlparse.urljoin(url, a['href'])
+            parsed = urlparse.urlparse(full_url)
+
+            encodings = [attach_list_soup.original_encoding] + ['euc-jp', 'euc_jisx0213', 'utf-8', 'shift_jis']
+            query = None
+            url_encoding: str = None
+            for encoding in encodings:
+                try:
+                    query = urlparse.parse_qs(parsed.query, errors='strict', encoding=encoding)
+                    url_encoding = encoding
+                    break
+                except UnicodeDecodeError:
+                    pass
+            assert query, f'Failed to parse query string: {parsed.query}'
+
+            ns = query['refer'][0]
+            assert ns, f'Failed to parse refer: {parsed.query}'
+            print(f'Looking for attachs in namespace {ns}')
+            ns_saved = 0
+            for attach in get_attachs(url, ns=ns, dumpDir=dumpDir, session=session):
+                if attach not in attaches:
+                    attaches.append(attach)
+                    ns_saved += 1
+                else:
+                    # print(f'Found duplicate attach: {attach}')
+                    pass
+            print(f'Found {ns_saved} new attachs in namespace {ns}')
+        else:
+            continue
 # <li><a href="./?plugin=attach&amp;pcmd=open&amp;file=sample1.png&amp;refer=BugTrack%2F100" title="2002/07/23 17:39:29 13.0KB">sample1.png</a> <span class="small">[<a href="./?plugin=attach&amp;pcmd=info&amp;file=sample1.png&amp;refer=BugTrack%2F100" title="添付ファイルの情報">詳細</a>]</span></li>
     print('Found %d files in namespace %s' % (len(attaches), ns or '(all)'))
 
@@ -120,11 +162,22 @@ def dump_attachs(base_url: str = '', dumpDir: str = '', session=None, threads: i
                 'age': attach['age'] if attach['age'] else 0
             }
             urlencoded = urlparse.urlencode(params, encoding=attach['url_encoding'], errors='strict')
-            with session.get(base_url + '?' + urlencoded,
+            url = base_url + '?' + urlencoded
+
+            # workround for wikiwiki.jp
+            # https://wikiwiki.jp/genshinwiki/?plugin=attach&pcmd=open&file=浮流の対玉_5.png&refer=バッグ%2F聖遺物 ->
+            # https://cdn.wikiwiki.jp/to/w/genshinwiki/バッグ/聖遺物/::attach/浮流の対玉_5.png
+            if 'wikiwiki.jp' in base_url:
+                url = ("https://cdn.wikiwiki.jp/to/w/" + 
+                       base_url.replace("https://wikiwiki.jp/", "").rstrip('/') + '/' +
+                       f"{attach['refer']}/::attach/{attach['file']}" +
+                       (f"?age={attach['age']}" if attach['age'] else "")
+                       )
+                print(f"wikipedia.jp detected, using {url} instead of {base_url}?{urlencoded}")
+
+            with session.get(url,
             stream=True, headers={'Referer': base_url}
             ) as r:
-                r.raise_for_status()
-
                 if local_size == -1:  # file does not exist
                     to_download = True
                 else:
@@ -142,7 +195,10 @@ def dump_attachs(base_url: str = '', dumpDir: str = '', session=None, threads: i
                         to_download = True  # file exists but is incomplete
 
                 if to_download:
-                    assert "content-disposition" in r.headers, r.url
+                    if 'wikiwiki.jp' in base_url:
+                        r.raise_for_status()
+                    else:
+                        assert "content-disposition" in r.headers, r.url
                     with open(file, 'wb') as f:
                         for chunk in r.iter_content(chunk_size=8192):
                             f.write(chunk)
