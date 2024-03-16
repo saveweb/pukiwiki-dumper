@@ -27,6 +27,7 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
         soup = BeautifulSoup(r.content, running_config.html_parser, from_encoding=from_encoding, exclude_encodings=['iso-8859-1'])
     body = soup.find('div', {'id': 'body'})
     body = soup.find('div', {'class': 'body'}) if body is None else body # https://www.wikihouse.com/pukiwiki/index.php?cmd=list
+    body = soup.body if body is None else body # https://texwiki.texjp.org/?cmd=list
     if body is None:
         raise CmdListDisabled('Action index is disabled')
     if body.find('div', {'id': 'content'}) is not None:

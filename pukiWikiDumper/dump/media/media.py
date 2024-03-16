@@ -42,6 +42,7 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
 
     body = attach_list_soup.find('div', {'id': 'body'})
     body = attach_list_soup.find('div', {'class': 'body'}) if body is None else body
+    body = attach_list_soup.body if body is None else body # https://texwiki.texjp.org/?plugin=attach&pcmd=list
 
     hrefs = body.find_all('a', href=True)
     for a in hrefs:
