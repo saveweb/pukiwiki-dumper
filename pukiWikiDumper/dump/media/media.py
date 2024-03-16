@@ -159,8 +159,9 @@ def dump_attachs(base_url: str = '', dumpDir: str = '', session=None, threads: i
                 'pcmd': "open",
                 'file': attach['file'],
                 'refer': attach['refer'],
-                'age': attach['age'] if attach['age'] else 0
             }
+            if attach['age']:
+                params['age'] = attach['age']
             urlencoded = urlparse.urlencode(params, encoding=attach['url_encoding'], errors='strict')
             url = base_url + '?' + urlencoded
 
