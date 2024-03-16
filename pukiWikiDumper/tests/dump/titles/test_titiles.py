@@ -12,14 +12,14 @@ cmd_list_result = {
     'pukiwiki.sourceforge.io_dev': 2653,
     'wikiwiki.jp_genshinwiki': 1764, # https://wikiwiki.jp/genshinwiki/?cmd=list
     'pukiwiki.sourceforge.io': 4229, # https://pukiwiki.sourceforge.io/?cmd=list
-    'penguin.tantin.jp': 1,
+    'penguin.tantin.jp_mori': 5850, # http://penguin.tantin.jp/mori/?cmd=list
 }
 
 @pytest.mark.parametrize("key, expected", cmd_list_result.items())
 def test_get_titles(key, expected):
     with open(PY_FILE_DIR / f"cmdlist.{key}.html", "rb") as f:
         content = f.read()
-    pages = get_pages(url=f'https://{key.replace("_", "/")}', debug_content=content)
+    pages = get_pages(url=f'https://{key.replace("_", "/")}/', debug_content=content)
     assert len(pages) == expected, f"Expected {expected} pages, got {len(pages)}"
     for page in pages:
         assert page['title'], f"Page title is empty: {page}"
@@ -33,5 +33,4 @@ def test_get_titles(key, expected):
         for page in pages:
             assert page in expected_pages, f"Page not found: {page}"
 
-# for key, expected in cmd_list_result.items():
-#     test_get_titles(key, expected)
+test_get_titles("pukiwiki.localhost", 27)
