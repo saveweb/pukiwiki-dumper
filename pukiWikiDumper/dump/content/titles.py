@@ -18,6 +18,7 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
     params = {'cmd': 'list'}
     if debug_content:
         soup = BeautifulSoup(debug_content, running_config.html_parser)
+        r = None
     else:
         r = session.get(url, params=params)
         from_encoding = None
@@ -28,6 +29,8 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
     body = soup.find('div', {'class': 'body'}) if body is None else body # https://www.wikihouse.com/pukiwiki/index.php?cmd=list
     if body is None:
         raise CmdListDisabled('Action index is disabled')
+    if body.find('div', {'id': 'content'}) is not None:
+        body = body.find('div', {'id': 'content'})
     ul = body.find('ul')
     if ul is None:
         raise CmdListDisabled('Action index is disabled')
@@ -41,22 +44,27 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
             continue
         title = a.text
 
-        full_url = urlparse.urljoin(r.url, a['href'])
+        full_url = urlparse.urljoin(r.url if r else url, a['href'])
         parsed = urlparse.urlparse(full_url)
+        if not parsed.query: # workround for https://wikiwiki.jp/ wikis
+            wikipath = urlparse.urlparse(r.url if r else url).path
+            page_fullpath = urlparse.urlparse(full_url).path
+            pagepath = page_fullpath.replace(wikipath, '')
 
 
         encodings = [soup.original_encoding] + ['euc-jp', 'euc_jisx0213', 'utf-8', 'shift_jis']
         url_encoding = None
+        title_to_parse = parsed.query if parsed.query else pagepath
         for encoding in encodings:
             try:
-                title = urlparse.unquote(parsed.query.replace("+", " "), errors='strict', encoding=encoding)
+                parsed_title = urlparse.unquote(title_to_parse.replace("+", " "), errors='strict', encoding=encoding)
                 url_encoding = encoding
                 break
             except (UnicodeEncodeError, UnicodeDecodeError):
                 pass
-        assert url_encoding, f'Failed to parse query string: {parsed.query}'
+        assert url_encoding, f'Failed to parse query string: {title_to_parse}'
         page = {
-            'title': title,
+            'title': parsed_title if parsed_title else title,
             'url_encoding': url_encoding,
         }
         pages.append(page)
