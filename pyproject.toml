@@ -11,6 +11,10 @@ packages = [
     { include = "pukiWikiUploader/**/*" },
 ]
 
+exclude = [
+    "pukiWikiDumper/tests",
+]
+
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/saveweb/pukiwiki-dumper/issues"
 "repository" = "https://github.com/saveweb/pukiwiki-dumper/"
