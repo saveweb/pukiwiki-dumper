@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PukiWikiDumper"
-version = "0.0.13"
+version = "0.0.14"
 description = "A tool for archiving PukiWiki"
 authors = ["yzqzss <yzqzss@yandex.com>"]
 license = "GPL-3.0"
