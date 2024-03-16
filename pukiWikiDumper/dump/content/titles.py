@@ -22,7 +22,7 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
     else:
         r = session.get(url, params=params)
         from_encoding = None
-        if r.encoding.lower() == 'euc-jp' or r.apparent_encoding.lower() == 'euc-jp':
+        if str(r.encoding).lower() == 'euc-jp' or str(r.apparent_encoding).lower() == 'euc-jp':
             from_encoding = 'euc_jisx0213'
         soup = BeautifulSoup(r.content, running_config.html_parser, from_encoding=from_encoding, exclude_encodings=['iso-8859-1'])
     body = soup.find('div', {'id': 'body'})

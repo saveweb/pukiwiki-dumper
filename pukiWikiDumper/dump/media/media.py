@@ -35,7 +35,7 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
     r = session.get(url, params=params, headers={'Referer': url})
 
     from_encoding = None
-    if r.encoding.lower() == 'euc-jp' or r.apparent_encoding.lower() == 'euc-jp':
+    if str(r.encoding).lower() == 'euc-jp' or str(r.apparent_encoding).lower() == 'euc-jp':
         from_encoding = 'euc_jisx0213'
 
     attach_list_soup = BeautifulSoup(r.content, running_config.html_parser,from_encoding=from_encoding, exclude_encodings=['iso-8859-1', 'windows-1252'])
