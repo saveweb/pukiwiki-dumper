@@ -28,6 +28,7 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
     body = soup.find('div', {'id': 'body'})
     body = soup.find('div', {'class': 'body'}) if body is None else body # https://www.wikihouse.com/pukiwiki/index.php?cmd=list
     body = soup.find('div', {'class': 'content'}) if body is None else body # http://penguin.tantin.jp/mori/?cmd=list
+    body = soup.find('div', {'id': 'contents'}) if body is None else body # http://nekokabu.s7.xrea.com/wiki/?cmd=list
     body = soup.body if body is None else body # https://texwiki.texjp.org/?cmd=list
     if body is None:
         raise CmdListDisabled('Action index is disabled')
