@@ -17,7 +17,7 @@ def get_pages(url: str, debug_content: Optional[bytes] = None, session: requests
     pages = []
     params = {'cmd': 'list'}
     if debug_content:
-        soup = BeautifulSoup(debug_content, running_config.html_parser)
+        soup = BeautifulSoup(debug_content, running_config.html_parser, exclude_encodings=['ibm866'])
         r = None
     else:
         r = session.get(url, params=params)
