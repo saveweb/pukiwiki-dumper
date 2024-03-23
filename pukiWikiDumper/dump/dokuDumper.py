@@ -11,13 +11,12 @@ from pukiWikiDumper.utils.util import print_with_lock as print
 
 from pukiWikiDumper.__version__ import DUMPER_VERSION, pukiWikiDumper_outdated_check
 from pukiWikiDumper.dump.content.content import dump_content
-from pukiWikiDumper.dump.html import dump_HTML
 from pukiWikiDumper.dump.info import update_info
 from pukiWikiDumper.dump.media import dump_attachs
 from pukiWikiDumper.utils.config import update_config, running_config
 from pukiWikiDumper.utils.patch import SessionMonkeyPatch
 from pukiWikiDumper.utils.session import createSession, load_cookies
-from pukiWikiDumper.utils.util import avoidSites, buildBaseUrl, getPukiUrl, smkdirs, standardizeUrl, uopen, url2prefix
+from pukiWikiDumper.utils.util import avoidSites, buildBaseUrl, getPukiUrl, smkdirs, standardizeUrl, url2prefix
 
 DEFAULT_THREADS = -1 # magic number, -1 means use 1 thread.
 

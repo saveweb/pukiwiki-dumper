@@ -114,29 +114,3 @@ def dump_page(dumpDir: str,
     if current_only:
         print(msg_header, '    [[%s]] saved.' % (page['title']))
         return
-
-    # revs = get_revisions(puki_url, page, session=session, msg_header=msg_header)
-
-
-    # save_page_changes(dumpDir=dumpDir, child_path=child_path, title=page, 
-    #                    revs=revs, msg_header=msg_header)
-
-
-    for rev in revs[1:]:
-        if 'id' in rev and rev['id']:
-            try:
-                txt = getSource(puki_url, page, rev['id'], session=session)
-                smkdirs(dumpDir, '/attic/' + child_path)
-                with uopen(dumpDir + '/attic/' + page.replace(':', '/') + '.' + rev['id'] + '.txt', 'w') as f:
-                    f.write(txt)
-                print(msg_header, '    Revision %s of [[%s]] saved.' % (
-                    rev['id'], page))
-            except DispositionHeaderMissingError:
-                print(msg_header, '    Revision %s of [[%s]] is empty. (probably deleted)' % (
-                    rev['id'], page))
-        else:
-            print(msg_header, '    Revision %s of [[%s]] failed: %s' % (rev['id'], page, 'Rev id not found (please check ?do=revisions of this page)'))
-
-
-            # time.sleep(1.5)
-
