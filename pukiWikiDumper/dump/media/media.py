@@ -166,7 +166,7 @@ def dump_attachs(base_url: str = '', dumpDir: str = '', session=None, threads: i
         print('Media: (%d/%d): [[%s]] ...' % (index_of_title+1, len(attaches), attach))
 
         def download(attach: Dict[str, str], session: requests.Session):
-            filename = attach['refer'].encode('utf-8').hex() + '_' + attach['file'].encode('utf-8').hex()
+            filename = attach['refer'].encode('utf-8').hex() + '_' + attach['file'].encode('utf-8').hex() + (f".{attach['age']}" if attach['age'] else "")
             filename = filename.upper()
             if len(filename) > 255: # filename too long
                 subdir_A = filename[:255]
