@@ -5,7 +5,7 @@ import re
 import sys
 import threading
 import time
-from typing import Optional, List
+from typing import Dict, Optional, List
 from urllib.parse import unquote, urlparse, urljoin
 from rich import print as rprint
 import requests
@@ -195,12 +195,12 @@ def url2prefix(url: str, ascii_slugify: bool = True):
     return prefix
 
 
-def load_pages(pagesFilePath) -> Optional[List[str]]:
-    """ Load titles from dump directory
+def load_pages(pagesFilePath) -> Optional[List[Dict]]:
+    """ Load pages from dump directory
 
     Return:
-        `list[str]`: titles
-        `None`: titles file does not exist or incomplete
+        `list[page]`: pages
+        `None`: pages file does not exist or incomplete
      """
     if os.path.exists(pagesFilePath):
         with uopen(pagesFilePath, 'r') as f:

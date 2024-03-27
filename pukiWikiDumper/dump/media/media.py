@@ -1,15 +1,16 @@
 import json
 import os
-import re
 import threading
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 import urllib.parse as urlparse
 
 from bs4 import BeautifulSoup
 import requests
+from tqdm import tqdm
 
-from pukiWikiDumper.utils.util import smkdirs, uopen
+from pukiWikiDumper.dump.content.titles import get_pages
+from pukiWikiDumper.utils.util import load_pages, smkdirs, uopen
 from pukiWikiDumper.utils.util import print_with_lock as print
 from pukiWikiDumper.utils.config import running_config
 
@@ -18,7 +19,7 @@ from pukiWikiDumper.utils.config import running_config
 sub_thread_error = None
 
 
-def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session=None) -> List[Dict[str, str]]:
+def get_attachs(base_url: str, ns: str = '', ns_encoding: str = 'utf-8', dumpDir: str = '', session: requests.Session=None) -> List[Dict[str, str]]:
     """ Return a list of media filenames of a wiki """
 
     if dumpDir and os.path.exists(dumpDir + '/dumpMeta/attachs.jsonl'):
@@ -26,13 +27,16 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
             attaches = [json.loads(line) for line in f]
             return attaches
 
-    attaches: List[Dict[str, str]] = []
+    attaches: List[Dict] = []
 
     params={'plugin': 'attach', 'pcmd': 'list'}
     if ns:
         params['refer'] = ns
 
-    r = session.get(url, params=params, headers={'Referer': url})
+    params_encoded = urlparse.urlencode(params, encoding=ns_encoding, errors='strict')
+    url = base_url + '?' + params_encoded
+
+    r = session.get(url, headers={'Referer': url})
 
     from_encoding = None
     if str(r.encoding).lower() == 'euc-jp' or str(r.apparent_encoding).lower() == 'euc-jp':
@@ -44,10 +48,29 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
     body = attach_list_soup.find('div', {'class': 'body'}) if body is None else body
     body = attach_list_soup.body if body is None else body # https://texwiki.texjp.org/?plugin=attach&pcmd=list
 
-    hrefs = body.find_all('a', href=True)
+    if body is None and 'Fatal error: Allowed memory size of' in r.text:
+        # http://deco.gamedb.info/wiki/?plugin=attach&pcmd=list
+        print('Fatal error: Allowed memory size of... (OOM), ns:', ns)
+        if ns:
+            # avoid infinite loop
+            return []
+        pages = load_pages(pagesFilePath=dumpDir + '/dumpMeta/pages.jsonl')
+        if pages is None:
+            pages = get_pages(url=base_url, session=session)
+        for page in tqdm(pages):
+            for attach in get_attachs(base_url=base_url, ns=page['title'], ns_encoding=page['url_encoding'], session=session):
+                if attach not in attaches:
+                    attaches.append(attach)
+        print('Found %d files in all namespaces' % len(attaches))
+        if dumpDir:
+            save_attachs(dumpDir, attaches)
+        return attaches
+    
+    assert body, f'Failed to find body in {r.url}'
+    hrefs = body.find_all('a', href=True) # type: ignore
     for a in hrefs:
         if "pcmd=info" in a['href']:
-            full_url: str = urlparse.urljoin(url, a['href'])
+            full_url: str = urlparse.urljoin(base_url, a['href'])
             parsed = urlparse.urlparse(full_url)
 
             encodings = [attach_list_soup.original_encoding] + ['euc-jp', 'euc_jisx0213', 'utf-8', 'shift_jis']
@@ -73,12 +96,12 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
             })
         # https://wikiwiki.jp/genshinwiki/?cmd=attach&pcmd=list
         elif "pcmd=list" in a['href']:
-            full_url: str = urlparse.urljoin(url, a['href'])
+            full_url: str = urlparse.urljoin(base_url, a['href'])
             parsed = urlparse.urlparse(full_url)
 
             encodings = [attach_list_soup.original_encoding] + ['euc-jp', 'euc_jisx0213', 'utf-8', 'shift_jis']
             query = None
-            url_encoding: str = None
+            url_encoding: Optional[str] = None
             for encoding in encodings:
                 try:
                     query = urlparse.parse_qs(parsed.query, errors='strict', encoding=encoding)
@@ -92,7 +115,7 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
             assert ns, f'Failed to parse refer: {parsed.query}'
             print(f'Looking for attachs in namespace {ns}')
             ns_saved = 0
-            for attach in get_attachs(url, ns=ns, dumpDir=dumpDir, session=session):
+            for attach in get_attachs(base_url, ns=ns, ns_encoding=url_encoding or 'utf-8', session=session):
                 if attach not in attaches:
                     attaches.append(attach)
                     ns_saved += 1
@@ -104,13 +127,17 @@ def get_attachs(url, ns: str = '',  dumpDir: str = '', session: requests.Session
             continue
 # <li><a href="./?plugin=attach&amp;pcmd=open&amp;file=sample1.png&amp;refer=BugTrack%2F100" title="2002/07/23 17:39:29 13.0KB">sample1.png</a> <span class="small">[<a href="./?plugin=attach&amp;pcmd=info&amp;file=sample1.png&amp;refer=BugTrack%2F100" title="添付ファイルの情報">詳細</a>]</span></li>
     print('Found %d files in namespace %s' % (len(attaches), ns or '(all)'))
-
     if dumpDir:
-        smkdirs(dumpDir + '/dumpMeta')
-        with uopen(dumpDir + '/dumpMeta/attachs.jsonl', 'w') as f:
-            for attach in attaches:
-                f.write(json.dumps(attach, ensure_ascii=False)+'\n')
+        save_attachs(dumpDir, attaches)
+
     return attaches
+
+
+def save_attachs(dumpDir: str, attaches: List[Dict]):
+    smkdirs(dumpDir + '/dumpMeta')
+    with uopen(dumpDir + '/dumpMeta/attachs.jsonl', 'w') as f:
+        for attach in attaches:
+            f.write(json.dumps(attach, ensure_ascii=False)+'\n')
 
 
 def dump_attachs(base_url: str = '', dumpDir: str = '', session=None, threads: int = 1, ignore_errors: bool = False):
