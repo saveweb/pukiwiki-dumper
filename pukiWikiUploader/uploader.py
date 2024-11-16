@@ -177,14 +177,15 @@ Dumped with PukiWiki-Dumper v{config.get('pukiWikiDumper_version')}, and uploade
                 print(f"File {file_in_item['name']} already exists in {identifier_remote}.")
         print(f"Uploading {len(filedict)} files...")
         print(md_init)
-        r = item.upload(
-            files=filedict,
-            metadata=md_init,
-            access_key=access_key,
-            secret_key=secret_key,
-            verbose=True,
-            queue_derive=False,
-        )
+        if filedict:
+            item.upload(
+                files=filedict,
+                metadata=md_init,
+                access_key=access_key,
+                secret_key=secret_key,
+                verbose=True,
+                queue_derive=False,
+            )
         print(f"Uploading {len(filedict)} files: Done.\n")
 
 
