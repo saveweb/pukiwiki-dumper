@@ -1,4 +1,4 @@
-DUMPER_VERSION = '0.0.17'
+DUMPER_VERSION = '0.0.18'
 
 from pukiWikiDumper.exceptions import VersionOutdatedError
 
