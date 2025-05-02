@@ -8,11 +8,10 @@ import time
 import requests
 import urllib3
 
-from pukiWikiDumper.__version__ import DUMPER_VERSION
 from pukiWikiDumper.utils.util import uopen
 
 
-def createSession(retries=5):
+def createSession(retries=5, user_agent=None):
     session = requests.Session()
     try:
         from requests.adapters import HTTPAdapter
@@ -68,8 +67,7 @@ def createSession(retries=5):
     except:
         pass
 
-    session.headers.update({'User-Agent': 'pukiWikiDumper/' +
-                           DUMPER_VERSION + ' (https://github.com/saveweb/pukiwiki-dumper)'})
+    session.headers.update({'User-Agent': user_agent})
     print('User-Agent:',session.headers.get('User-Agent'))
 
     return session

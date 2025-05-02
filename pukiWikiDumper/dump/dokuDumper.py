@@ -71,6 +71,9 @@ def getArgumentParser():
     parser.add_argument("-g", "--uploader-arg", dest="uploader_args", action='append', default=[],
                         help="Arguments for uploader.")
     parser.add_argument('--force', action='store_true', help='To dump even if a recent dump exists on IA')
+    parser.add_argument('--user-agent', dest="user_agent", type=str,
+                        default='pukiWikiDumper/' + DUMPER_VERSION + ' (https://github.com/saveweb/pukiwiki-dumper)',
+                        help=f'The User-Agent to use when making requests [default: pukiWikiDumper/{DUMPER_VERSION} ...]')
 
     return parser
 
@@ -153,7 +156,7 @@ def dump():
         pukiWikiDumper_outdated_check()
     url_input = args.url
 
-    session = createSession(retries=args.retry)
+    session = createSession(retries=args.retry, user_agent=args.user_agent)
 
     if args.verbose:
         def print_request(r: requests.Response, *args, **kwargs):
