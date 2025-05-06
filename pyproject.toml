@@ -23,13 +23,13 @@ exclude = [
 python = "^3.8"
 requests = "^2.31.0"
 beautifulsoup4 = "^4.11.2"
-internetarchive = "^3.5.0"
-rich = "^13.4.2"
+internetarchive = "^3.7.0"
+rich = "^14.0.0"
 python-slugify = "^8.0.1"
 chardet = "^5.2.0"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^6.2.5"
 flake8 = "^4.0.1"
 
